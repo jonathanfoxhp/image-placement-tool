@@ -8,7 +8,6 @@ import {
   Select,
   TextField,
   Slider,
-  Card,
 } from "@radix-ui/themes";
 import { Theme } from "@radix-ui/themes";
 import { useDropzone } from "react-dropzone";
@@ -75,51 +74,10 @@ function App() {
     setDeviceModel(newDevicModeleValue); // Update state with the input value
   };
 
-  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
-  const [textGuidePosition, setTextGuidePosition] = useState({ x: 0, y: 0 });
-  const [isImageDragging, setIsImageDragging] = useState(false);
-  const [isTextGuideDragging, setIsTextGuideDragging] = useState(false);
-
-  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
-
-  const handleImageMouseDown = (e) => {
-    console.log("start dragging");
-    setIsImageDragging(!isImageDragging); // Start dragging
-    // Capture the current mouse position and the image position
-    setImageOffset({
-      x: e.clientX + imagePosition.x, // Adjust for right-based positioning
-      y: e.clientY - imagePosition.y, // Same for the vertical position
-    });
-  };
-
-  const handleImageMouseMove = (e) => {
-    if (isImageDragging) {
-      // Calculate new image position based on the mouse movement
-      setImagePosition({
-        x: imageOffset.x - e.clientX, // Subtract mouse X from initial offset for right-based
-        y: e.clientY - imageOffset.y, // Standard Y movement (top remains the same)
-      });
-    }
-  };
-
-  // Mouse move event: Move the image
-  const handleTextGuideMouseMove = (e) => {
-    if (isTextGuideDragging) {
-      console.log(textGuidePosition.x);
-      setTextGuidePosition({
-        x: e.clientX - textGuidePosition.x,
-      });
-    }
-  };
-
-  const handleTextGuideMouseDown = (e) => {
-    console.log(e);
-    setIsTextGuideDragging(!isTextGuideDragging);
-    // Calculate the offset between the image and mouse cursor
-    setTextGuidePosition({
-      x: e.clientX - textGuidePosition.x,
-    });
-  };
+  const [imageOffset, setImageOffset] = useState({
+    rightOffset: 100,
+    topOffset: 0,
+  });
 
   // drag and drop
   const [files, setFiles] = useState([]);
@@ -144,7 +102,7 @@ function App() {
         width: "100%",
         zIndex: "100",
         transition: "transform 0.3s ease", // Smooth transition
-        transform: isImageScrollScaled ? "scale(0.9)" : "scale(1)",
+        // transform: isImageScrollScaled ? "scale(0.9)" : "scale(1)",
         opacity: isImageScrollScaled ? "0.5" : "1",
       }}
       key={file.name}
@@ -162,15 +120,72 @@ function App() {
     return () => files.forEach((file) => URL.revokeObjectURL(file.preview));
   }, []);
 
+  const createAndDownloadJson = () => {
+    const jsonData = {
+      sku: "placeholder",
+      name: deviceModel,
+      prettyName: deviceNickname,
+      LogoType: "tbd",
+      deviceImage: {
+        "Left Facing": {
+          large: {
+            uri: "tbd",
+            width: deviceWidth,
+            height: "auto",
+            top: imageOffset.topOffset,
+            right: imageOffset.rightOffset,
+            wrap: headerRightOffset,
+          },
+          small: {
+            uri: "tbd",
+            width: "tbd",
+            height: "tbd",
+            top: "tbd",
+            right: "tbd",
+            wrap: "tbd",
+          },
+        },
+      },
+    };
+
+    const fileName = "data.txt";
+    const fileContent = JSON.stringify(jsonData, null, 2); // Pretty-printed JSON
+    const blob = new Blob([fileContent], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.download = fileName;
+    link.href = window.URL.createObjectURL(blob);
+    link.click();
+    window.URL.revokeObjectURL(link.href);
+  };
+
   return (
     <>
+      {/* <div
+        className="test"
+        style={{
+          background: "red",
+          width: "200px",
+          height: "200px",
+          position: "absolute",
+        }}
+      /> */}
       {thumbs?.length > 0 && (
         <Rnd
           enableResizing={false}
           default={{
             x: 100,
             y: 0,
-            // width: deviceWidth + "px",
+          }}
+          onDragStop={(e, d) => {}}
+          onDrag={(e, d) => {
+            const elementWidth = deviceWidth; // The width of the element (default value)
+            const parent = document.getElementById("root"); // Reference to parent container
+            const parentWidth = parent.offsetWidth; // Parent container's width
+            const rightPosition = parentWidth - (d.x + elementWidth);
+            setImageOffset({
+              rightOffset: rightPosition,
+              topOffset: d.y,
+            });
           }}
         >
           <div style={{ border: "1px solid red", width: deviceWidth + "px" }}>
@@ -181,15 +196,11 @@ function App() {
       <Rnd
         enableResizing={false}
         onDrag={(e, d) => {
-          // console.log(e);
-          // console.log(d);
           const elementWidth = 10; // The width of the element (default value)
           const parent = document.getElementById("root"); // Reference to parent container
           const parentWidth = parent.offsetWidth; // Parent container's width
-
           const rightPosition = parentWidth - (d.x + elementWidth);
           setHeaderRightOffset(rightPosition);
-          // console.log("Right Position: ", rightPosition);
         }}
         dragAxis="x"
         default={{
@@ -199,7 +210,6 @@ function App() {
           height: "100%",
         }}
         style={{ position: "fixed" }}
-        className="test23"
       >
         <div
           id="text-wrap-line"
@@ -352,7 +362,10 @@ function App() {
                 </div>
               </Flex>
               <Flex direction="column" gap="5" width="100%">
-                <Button style={{ width: "200px" }} disabled>
+                <Button
+                  style={{ width: "200px" }}
+                  onClick={createAndDownloadJson}
+                >
                   Export JSON
                 </Button>
               </Flex>

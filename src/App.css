@@ -5,6 +5,7 @@ body {
   background-color: #e0e1ee;
   font-family: Forma DJR UI;
   user-select: none;
+  margin: 0px !important;
 }
 #desktop-printer-overlay {
   position: fixed;
@@ -99,7 +100,7 @@ body {
   padding: 40px;
   background: rgba(0, 0, 0);
   position: fixed;
-  z-index: 10;
+  z-index: 20000;
   bottom: 0;
   width: 100%;
 }
